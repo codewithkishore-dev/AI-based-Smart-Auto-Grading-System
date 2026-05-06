@@ -15,31 +15,51 @@ function Results() {
       return;
     }
 
-    API.get("/submissions/results")
-      .then((res) => {
-        const grouped = {};
-
-        res.data.forEach((r) => {
-          if (!grouped[r.studentId]) {
-            grouped[r.studentId] = {
-              studentId: r.studentId,
-              studentName: r.studentName,
-              totalAnswers: 0,
-              totalMarks: 0,
-            };
-          }
-
-          grouped[r.studentId].totalAnswers += 1;
-          grouped[r.studentId].totalMarks += Number(r.marks);
-        });
-
-        setStudents(Object.values(grouped));
-      })
-      .catch((err) => {
-        console.error(err);
-        alert("Failed to load results");
-      });
+    loadResults();
   }, [navigate]);
+
+  const loadResults = async () => {
+    try {
+      let res;
+
+      try {
+        res = await API.get("/submissions/results");
+      } catch {
+        res = await API.get("/submissions");
+      }
+
+      const grouped = {};
+
+      res.data.forEach((r) => {
+        const studentId = r.studentId || "Unknown ID";
+
+        if (!grouped[studentId]) {
+          grouped[studentId] = {
+            studentId,
+            studentName: r.studentName || "Unknown",
+            totalAnswers: 0,
+            totalMarks: 0,
+          };
+        }
+
+        grouped[studentId].totalAnswers += 1;
+
+        const marks =
+          r.marks !== undefined
+            ? Number(r.marks)
+            : r.aiMarks !== undefined
+            ? Number(r.aiMarks)
+            : 0;
+
+        grouped[studentId].totalMarks += marks;
+      });
+
+      setStudents(Object.values(grouped));
+    } catch (err) {
+      console.error("Results loading error:", err);
+      alert("Failed to load results");
+    }
+  };
 
   return (
     <div className="box">
