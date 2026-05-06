@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 @RestController
-@RequestMapping("/api/coding")
-@CrossOrigin("*")
+@RequestMapping("/api")
+@CrossOrigin(origins = "*")
 public class CodingController {
 
     private final CodingProblemRepository problemRepository;
@@ -28,17 +28,28 @@ public class CodingController {
         this.testCaseRepository = testCaseRepository;
         this.submissionRepository = submissionRepository;
     }
-    @GetMapping("/problems/category/{category}")
-public List<CodingProblem> getProblemsByCategory(@PathVariable String category) {
-    return problemRepository.findByCategory(category.toUpperCase());
-}
 
-    @GetMapping("/problems")
+    @GetMapping({
+            "/coding/problems",
+            "/problems",
+            "/coding-problems"
+    })
     public List<CodingProblem> getProblems() {
         return problemRepository.findAll();
     }
 
-    @GetMapping("/problems/{id}")
+    @GetMapping({
+            "/coding/problems/category/{category}",
+            "/problems/category/{category}"
+    })
+    public List<CodingProblem> getProblemsByCategory(@PathVariable String category) {
+        return problemRepository.findByCategory(category.toUpperCase());
+    }
+
+    @GetMapping({
+            "/coding/problems/{id}",
+            "/problems/{id}"
+    })
     public Map<String, Object> getProblem(@PathVariable Long id) {
         CodingProblem problem = problemRepository.findById(id).orElse(null);
 
@@ -57,7 +68,10 @@ public List<CodingProblem> getProblemsByCategory(@PathVariable String category) 
         return res;
     }
 
-    @PostMapping("/submit")
+    @PostMapping({
+            "/coding/submit",
+            "/submit"
+    })
     public CodingSubmission submitCode(@RequestBody CodingSubmission submission) {
 
         CodingProblem problem = problemRepository.findById(submission.getProblemId()).orElse(null);
@@ -84,7 +98,6 @@ public List<CodingProblem> getProblemsByCategory(@PathVariable String category) 
 
         int total = tests.size();
         int passed = estimatePassedTests(lang, code, total);
-
         double score = total == 0 ? 0 : ((double) passed / total) * 100;
 
         submission.setProblemTitle(problem.getTitle());
@@ -94,6 +107,22 @@ public List<CodingProblem> getProblemsByCategory(@PathVariable String category) 
         submission.setStatus(passed == total ? "Accepted" : "Partially Accepted");
 
         return submissionRepository.save(submission);
+    }
+
+    @GetMapping({
+            "/coding/submissions",
+            "/submissions"
+    })
+    public List<CodingSubmission> getAllSubmissions() {
+        return submissionRepository.findAll();
+    }
+
+    @GetMapping({
+            "/coding/submissions/student/{studentId}",
+            "/submissions/student/{studentId}"
+    })
+    public List<CodingSubmission> getStudentSubmissions(@PathVariable String studentId) {
+        return submissionRepository.findByStudentId(studentId);
     }
 
     private boolean isValidLanguageCode(String language, String code) {
@@ -132,15 +161,5 @@ public List<CodingProblem> getProblemsByCategory(@PathVariable String category) 
         }
 
         return Math.max(1, total / 2);
-    }
-
-    @GetMapping("/submissions")
-    public List<CodingSubmission> getAllSubmissions() {
-        return submissionRepository.findAll();
-    }
-
-    @GetMapping("/submissions/student/{studentId}")
-    public List<CodingSubmission> getStudentSubmissions(@PathVariable String studentId) {
-        return submissionRepository.findByStudentId(studentId);
     }
 }
